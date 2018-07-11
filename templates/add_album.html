@@ -1,0 +1,55 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div class="container">
+
+  <div class="card text-center mt-3">
+    <div class="card-header text-center bg-primary">
+      <p>ADD NEW ALBUM</p>
+    </div>
+  <form method="POST" action="{{ url_for('add_album') }}" class="card-footer text-center">
+      <div class="row">
+        {{ form.csrf_token}}
+        <div class="col-sm-4">
+          {{ form.catno.label }}<br>
+          {{ form.catno }}<br>
+        </div>
+        <div class="col-sm-4">
+          {{ form.artist.label }}<br>
+          {{ form.artist }}<br>
+        </div>
+        <div class="col-sm-4">
+          {{ form.title.label }}<br>
+          {{ form.title }}<br>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4">
+          {{ form.year.label }}<br>
+          {{ form.year }}<br>
+        </div>
+        <div class="col-sm-4">
+          {{ form.rlabel.label }}<br>
+          {{ form.rlabel }}<br>
+        </div>
+        <div class="col-sm-4">
+          {{ form.genre.label }}<br>
+          {{ form.genre }}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4">
+          {{ form.upc.label }}<br>
+          {{ form.upc }}
+        </div>
+        <div class="col-sm-4">
+          {{ form.format.label }}<br>
+          {{ form.format }}
+        </div>
+      </div>
+      <p><input class="btn btn-primary mt-3" type="submit" value="Submit">
+  </form>
+  </div>
+
+</div>
+{% endblock %}

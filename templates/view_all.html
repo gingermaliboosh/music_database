@@ -1,0 +1,51 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div class="container">
+
+  <!-- Header goes here -->
+
+  <div class="card text-center border border-dark mt-3 table-responsive">
+    <table>
+      <tbody class="table table-striped">
+      <tr class="bg-primary">
+        <th>Album Cover</th>
+        <th>Catalog Number</th>
+        <th>Artist</th>
+        <th>Album Title</th>
+        <th>Year Released</th>
+        <th>Label</th>
+        <th>Genre</th>
+        <th></th>
+        <!-- <th>Format</th> -->
+        <!-- <th></th> -->
+      <tr>
+        {% for album in albums %}
+          <tr>
+            <td>
+              {% if album.albumArt == None %}
+                <img class="border border-dark" src="/static/album_art/not_available.png" height="150" width="150">
+              {% elif album.albumArt != None %}
+                <img class="border border-dark" src="/static/album_art/{{album.albumArt}}" height="150" width="150">
+              {% endif %}
+            </td>
+            <td>{{ album.catno }}</td>
+            <td>{{ album.artist }}</td>
+            <td>{{ album.title }}</td>
+            <td>{{ album.year }}</td>
+            <td>{{ album.rlabel }}</td>
+            <td>{{ album.genre }}</td>
+            <!-- <td>Placeholder</td> -->
+            <!-- <td>Placeholder</td> -->
+            <td>
+              <a class="btn btn-primary" href="view_album/{{album.catno}}">View Album</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <div class="col-md-12 text-center border mt-3">
+    <h1 class="text-white">{{album.artist}} :: {{album.title}}</h1>
+  </div>
+  <div class="row mt-3">
+    <div class="col-sm-4 col-md-4 text-center">
+      {% if album.albumArt == None %}
+        <img src="/static/album_art/not_available.png" height="300" width="300">
+      {% elif album.albumArt != None %}
+        <img src="/static/album_art/{{album.albumArt}}" height="300" width="300">
+      {% endif %}
+    </div>
+    <div class="col-sm-8 col-md-8">
+      <table class="table table-light table-striped">
+      <tr>
+        <td>Artist: {{album.artist}}</td>
+      </tr>
+      <tr>
+        <td>Album: {{album.title}}</td>
+      </tr>
+      <tr>
+        <td>Catalog No: {{album.catno}}</td>
+      </tr>
+      <tr>
+        <td>Record Label: {{album.rlabel}}</td>
+      </tr>
+      <tr>
+        <td>Year Released: {{album.year}}</td>
+      </tr>
+      <tr>
+        <td>Genre: {{album.genre}}</td>
+      </tr>
+      <tr>
+        {% if album.format == 'thirtythree'%}
+          <td>Format: Vinyl, 33 1/3 RPM</td>
+        {% elif album.format == 'fortyfive' %}
+          <td>Format: Vinyl, 45 RPM</td>
+        {% elif album.format == 'cass' %}
+          <td>Format: Cassette</td>
+        {% endif %}
+      </tr>
+      </table>
+      <div class="text-center">
+        <form action="{{url_for('edit_album', catno=album.catno)}}" method="">
+          <input type="hidden" name="_method" value="EDIT">
+          <input type="submit" value="Edit Album" class="btn btn-primary">
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card text-center border border-dark mt-3 mb-3 table-responsive">
+    <table>
+      <tbody class="table table-striped">
+      <tr class="bg-primary">
+        <th>Track No.</th>
+        <th>Track Name</th>
+        <th>Duration</th>
+      <tr>
+        {% for song in songs %}
+          <tr>
+            <td>{{ song.trackno }}</td>
+            <td>{{ song.title }}</td>
+            <td>{{ song.duration }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% endblock %}
