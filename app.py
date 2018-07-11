@@ -160,10 +160,15 @@ def edit_album(catno):
     # Create Cursor
     cur = mysql.connection.cursor()
 
-    # Get article by id
+    # Get album from 'albums' table
     result = cur.execute("SELECT * FROM albums WHERE catno = %s", [catno])
 
     album = cur.fetchone()
+
+    # Get list of songs on the album from 'songs' table
+    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s", [catno])
+
+    songs = cur.fetchall()
 
     # Get form
     form = AlbumForm(request.form)
@@ -199,7 +204,7 @@ def edit_album(catno):
 
         return redirect(url_for('view_album', catno=catno))
 
-    return render_template('edit_album.html', album=album, form=form)
+    return render_template('edit_album.html', album=album, songs=songs, form=form)
 
 @app.route('/add_tracks/<string:catno>', methods=['GET', 'POST'])
 def add_tracks(catno):
