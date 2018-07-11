@@ -206,7 +206,7 @@ def add_tracks(catno):
 
     # Create cursor
     cur = mysql.connection.cursor()
-    # Get tracks
+    # Get tracks for display as you're adding them
     result = cur.execute("SELECT * FROM songs WHERE catno=%s ORDER BY trackno ASC", [catno])
 
     songs = cur.fetchall()
