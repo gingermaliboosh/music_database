@@ -61,11 +61,11 @@ def view_all():
 @app.route('/view_album/<string:catno>/')
 def view_album(catno):
     cur = mysql.connection.cursor()
-
+    # Get the album from the 'albums' table
     result = cur.execute("SELECT * FROM albums WHERE catno = %s", [catno])
 
     album = cur.fetchone()
-
+    # Get list of songs on the album from 'songs' table
     result_two = cur.execute("SELECT * FROM songs WHERE catno = %s", [catno])
 
     songs = cur.fetchall()
