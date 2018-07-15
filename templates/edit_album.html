@@ -49,9 +49,6 @@
         {% endif %}
       </tr>
       </table>
-      <div class="text-center">
-        <a class="btn btn-primary" href="/add_tracks/{{album.catno}}">Add Tracks</a>
-      </div>
     </div>
   </div>
 
@@ -93,6 +90,32 @@
         <input class="btn btn-primary mt-3" type="submit" value="Submit">
     </form>
 
+  </div>
+
+  <div class="card text-center border border-dark mt-3 mb-3 table-responsive">
+    <table>
+      <tbody class="table table-striped">
+      <tr class="bg-primary">
+        <th>Track No.</th>
+        <th>Track Name</th>
+        <th>Duration</th>
+        <th><a class="btn btn-light" href="/add_tracks/{{album.catno}}">Add Tracks</a></th>
+      <tr>
+        {% for song in songs %}
+          <tr>
+            <td>{{ song.trackno }}</td>
+            <td>{{ song.title }}</td>
+            <td>{{ song.duration }}</td>
+            <td>
+              <form action="{{url_for('edit_track', id=song.id)}}" method="">
+                <input type="hidden" name="_method" value="EDIT">
+                <input type="submit" value="Edit Track" class="btn btn-primary">
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 
 </div>

@@ -173,7 +173,7 @@ def edit_album(catno):
     # Get form
     form = AlbumForm(request.form)
 
-    # Populate article form fields
+    # Populate album form fields
     form.artist.data = album['artist']
     form.title.data = album['title']
     form.year.data = album['year']
@@ -242,6 +242,56 @@ def add_tracks(catno):
         return redirect(url_for('add_tracks', catno=catno))
 
     return render_template('add_tracks.html', songs=songs, form=form)
+
+@app.route('/edit_track/<int:id>', methods=['GET', 'POST'])
+def edit_track(id):
+    cur = mysql.connection.cursor()
+
+    result = cur.execute("SELECT * FROM songs WHERE id=%s", [id])
+
+    song = cur.fetchone()
+
+    cur.close()
+
+    form = SongForm(request.form)
+
+    # Populate album form fields
+    form.trackno.data = song['trackno']
+    form.song_title.data = song['title']
+    duration_one = song['duration']
+    # Split duration string to get minutes
+    min_split = duration_one.split(':')[0]
+    form.minutes.data = min_split
+    # Split duration string to get seconds
+    sec_split = duration_one.rsplit(':')[1]
+    form.seconds.data = sec_split
+
+    if request.method == 'POST' and form.validate():
+        trackno = form.trackno.data
+        title = form.song_title.data
+
+    return render_template('edit_track.html', id=id, form=form)
+
+@app.route('/delete_track/<int:id>', methods=['POST'])
+#@is_logged_in
+def delete_track(id):
+    #Create cursor
+    cur = mysql.connection.cursor()
+
+    catno = cur.execute("SELECT catno FROM songs WHERE id=%s", [id])
+
+    # Execute
+    cur.execute("DELETE FROM songs WHERE id = %s", [id])
+
+    # Commit to DB
+    mysql.connection.commit()
+
+    #Close DB connection
+    cur.close()
+
+    #flash('Article Deleted', 'success')
+
+    return redirect(url_for('edit_album', catno=catno))
 
 if __name__ == '__main__':
     app.run(debug=True)
