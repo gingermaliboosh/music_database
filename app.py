@@ -66,7 +66,7 @@ def view_album(catno):
 
     album = cur.fetchone()
     # Get list of songs on the album from 'songs' table
-    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s", [catno])
+    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s ORDER BY trackno ASC", [catno])
 
     songs = cur.fetchall()
 
@@ -166,7 +166,7 @@ def edit_album(catno):
     album = cur.fetchone()
 
     # Get list of songs on the album from 'songs' table
-    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s", [catno])
+    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s ORDER BY trackno ASC", [catno])
 
     songs = cur.fetchall()
 
@@ -251,6 +251,12 @@ def edit_track(id):
 
     song = cur.fetchone()
 
+    catno = song['catno']
+
+    result_two = cur.execute("SELECT * FROM albums WHERE catno=%s", [catno])
+
+    album = cur.fetchone()
+
     cur.close()
 
     form = SongForm(request.form)
@@ -267,10 +273,26 @@ def edit_track(id):
     form.seconds.data = sec_split
 
     if request.method == 'POST' and form.validate():
-        trackno = form.trackno.data
-        title = form.song_title.data
+        trackno = request.form['trackno']
+        title = request.form['song_title']
+        minutes = request.form['minutes']
+        seconds = request.form['seconds']
 
-    return render_template('edit_track.html', id=id, form=form)
+        # Add colon between minutes and seconds to insert duration into DB
+        duration = minutes + ":" + seconds
+
+        # Create Cursor
+        cur = mysql.connection.cursor()
+        # Execute cursor
+        cur.execute("UPDATE songs SET trackno=%s, title=%s, duration=%s WHERE id=%s", (trackno, title, duration, id))
+        # Commit to DB
+        mysql.connection.commit()
+        # Close DB connection
+        cur.close()
+
+        return redirect(url_for('edit_track', id=id))
+
+    return render_template('edit_track.html', id=id, album=album, song=song, form=form)
 
 @app.route('/delete_track/<int:id>', methods=['POST'])
 #@is_logged_in
@@ -278,8 +300,9 @@ def delete_track(id):
     #Create cursor
     cur = mysql.connection.cursor()
 
-    catno = cur.execute("SELECT catno FROM songs WHERE id=%s", [id])
-
+    result = cur.execute("SELECT catno FROM songs WHERE id=%s", [id])
+    song = cur.fetchone()
+    catno = song['catno']
     # Execute
     cur.execute("DELETE FROM songs WHERE id = %s", [id])
 

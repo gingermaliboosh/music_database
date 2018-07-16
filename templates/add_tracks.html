@@ -37,12 +37,19 @@
       <th>Track No.</th>
       <th>Track Name</th>
       <th>Duration</th>
+      <th></th>
     <tr>
       {% for song in songs %}
         <tr>
           <td>{{ song.trackno }}</td>
           <td>{{ song.title }}</td>
           <td>{{ song.duration }}</td>
+          <td>
+            <form action="{{url_for('edit_track', id=song.id)}}" method="">
+              <input type="hidden" name="_method" value="EDIT">
+              <input type="submit" value="Edit Track" class="btn btn-primary">
+            </form>
+          </td>
         </tr>
       {% endfor %}
     </tbody>
