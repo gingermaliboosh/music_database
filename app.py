@@ -7,6 +7,7 @@ from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_cl
 from werkzeug.utils import secure_filename
 from passlib.hash import sha256_crypt
 from functools import wraps
+from flask_sqlalchemy import SQLAlchemy
 import os.path
 
 app = Flask(__name__)
@@ -26,7 +27,9 @@ app.config['UPLOADED_PHOTOS_DEST'] = 'static/album_art'
 configure_uploads(app, photos)
 # init MySQL
 mysql = MySQL(app)
-
+# Config SQLAlchemy. Used for pagination when viewing all albums
+app.config['SQLALCHEMY_DATABASE_URI'] ='mysql://root:root@localhost/musicdb'
+db = SQLAlchemy(app)
 
 # Route for index page
 @app.route('/')
@@ -38,26 +41,27 @@ def home():
 def login():
     return render_template('login.html')
 
-# Route for the page that will display all entries in the database
-@app.route('/view_all')
-def view_all():
-    # Create cursor
-    cur = mysql.connection.cursor()
+class Albums(db.Model):
+    __tablename__ = 'albums'
+    id = db.Column('id', db.Integer, primary_key=True)
+    albumArt = db.Column('albumArt', db.Unicode)
+    catno = db.Column('catno', db.Unicode)
+    artist = db.Column('artist', db.Unicode)
+    title = db.Column('title', db.Unicode)
+    year = db.Column('year', db.Integer)
+    rlabel = db.Column('rlabel', db.Unicode)
+    genre = db.Column('genre', db.Unicode)
+    upc = db.Column('upc', db.Unicode)
+    format = db.Column('format', db.Unicode)
 
-    # Get articles
-    result = cur.execute("SELECT * FROM albums")
+# View all albums. Uses SQLAlchemy for pagination
+@app.route('/view_all/<int:page_num>')
+def albums(page_num):
+   albums = Albums.query.paginate(per_page=5, page=page_num, error_out=True)
 
-    albums = cur.fetchall()
+   return render_template('view_all.html', albums=albums)
 
-    if result > 0:
-        return render_template('view_all.html', albums=albums)
-    else:
-        msg = 'No Albums Found'
-        return render_template('view_all.html', msg=msg)
-
-    # Close DB connection
-    cur.close()
-
+# View one album
 @app.route('/view_album/<string:catno>/')
 def view_album(catno):
     cur = mysql.connection.cursor()

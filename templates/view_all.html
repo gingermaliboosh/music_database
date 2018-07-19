@@ -20,7 +20,7 @@
         <!-- <th>Format</th> -->
         <!-- <th></th> -->
       <tr>
-        {% for album in albums %}
+        {% for album in albums.items %}
           <tr>
             <td>
               {% if album.albumArt == None %}
@@ -38,13 +38,21 @@
             <!-- <td>Placeholder</td> -->
             <!-- <td>Placeholder</td> -->
             <td>
-              <a class="btn btn-primary" href="view_album/{{album.catno}}">View Album</a>
+              <a class="btn btn-primary" href="{{ url_for('view_album', catno=album.catno) }}">View Album</a>
             </td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  Go to page...
+  {% for page in albums.iter_pages() %}
+    {% if page %}
+      <a href="{{ url_for('albums', page_num=page)}}">{{ page }}</a>
+    {% else %}
+      ...
+    {% endif %}
+  {% endfor %}
 
 </div>
 
