@@ -1,28 +1,16 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-<form class="form-signin mt-3">
-    <div class="mb-4">
-      <h1 class="h3 mb-3 font-weight-normal col-sm-4 mx-auto text-center card bg-light">Login</h1>
+  <h1>Login</h1>
+  <form action="" method="POST">
+    <div class ="form-group">
+      <label>Username</label>
+      <input type="text" name="username" class="form-control" value={{request.form.username}}>
     </div>
-
-<div class="col-sm-4 mx-auto card text-center">
-    <div class="form-label-group mt-3">
-      <input type="email" id="inputEmail" class="form-control" placeholder="Email address" required autofocus>
-      <label for="inputEmail">Email address</label>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" name="password" class="form-control" value={{request.form.password}}>
     </div>
-
-    <div class="form-label-group">
-      <input type="password" id="inputPassword" class="form-control" placeholder="Password" required>
-      <label for="inputPassword">Password</label>
-    </div>
-
-    <div class="checkbox mb-3">
-      <label>
-        <input type="checkbox" value="remember-me"> Remember me
-      </label>
-    </div>
-    <button class="btn btn-lg btn-primary btn-block mb-3" type="submit">Sign in</button>
+    <button type="submit" class="btn btn-primary">Submit</button>
   </form>
-</div>
 {% endblock %}

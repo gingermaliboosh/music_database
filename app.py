@@ -2,7 +2,7 @@ from flask import Flask, render_template, flash, redirect, url_for, session, req
 from flask_mysqldb import MySQL
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
-from wtforms import StringField, SelectField
+from wtforms import StringField, SelectField, PasswordField, validators
 from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
 from werkzeug.utils import secure_filename
 from passlib.hash import sha256_crypt
@@ -31,52 +31,13 @@ mysql = MySQL(app)
 app.config['SQLALCHEMY_DATABASE_URI'] ='mysql://root:root@localhost/musicdb'
 db = SQLAlchemy(app)
 
-# Route for index page
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-# Route for login page
-@app.route('/login')
-def login():
-    return render_template('login.html')
-
-class Albums(db.Model):
-    __tablename__ = 'albums'
-    id = db.Column('id', db.Integer, primary_key=True)
-    albumArt = db.Column('albumArt', db.Unicode)
-    catno = db.Column('catno', db.Unicode)
-    artist = db.Column('artist', db.Unicode)
-    title = db.Column('title', db.Unicode)
-    year = db.Column('year', db.Integer)
-    rlabel = db.Column('rlabel', db.Unicode)
-    genre = db.Column('genre', db.Unicode)
-    upc = db.Column('upc', db.Unicode)
-    format = db.Column('format', db.Unicode)
-
-# View all albums. Uses SQLAlchemy for pagination
-@app.route('/view_all/<int:page_num>')
-def albums(page_num):
-   albums = Albums.query.paginate(per_page=5, page=page_num, error_out=True)
-
-   return render_template('view_all.html', albums=albums)
-
-# View one album
-@app.route('/view_album/<string:catno>/')
-def view_album(catno):
-    cur = mysql.connection.cursor()
-    # Get the album from the 'albums' table
-    result = cur.execute("SELECT * FROM albums WHERE catno = %s", [catno])
-
-    album = cur.fetchone()
-    # Get list of songs on the album from 'songs' table
-    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s ORDER BY trackno ASC", [catno])
-
-    songs = cur.fetchall()
-
-    cur.close()
-
-    return render_template('view_album.html', album=album, songs=songs)
+# Form for registering
+class RegisterForm(FlaskForm):
+    username = StringField('Username', [validators.Length(min=4, max=25)])
+    password = PasswordField('Password', [validators.DataRequired(),
+        validators.EqualTo('confirm', message='Passwords do not match')
+    ])
+    confirm = PasswordField('Confirm Password')
 
 # Form for adding record to database
 class AlbumForm(FlaskForm):
@@ -98,12 +59,84 @@ class SongForm(FlaskForm):
     minutes = StringField('MIN')
     seconds = StringField('SEC')
 
+class Albums(db.Model):
+    __tablename__ = 'albums'
+    id = db.Column('id', db.Integer, primary_key=True)
+    albumArt = db.Column('albumArt', db.Unicode)
+    catno = db.Column('catno', db.Unicode)
+    artist = db.Column('artist', db.Unicode)
+    title = db.Column('title', db.Unicode)
+    year = db.Column('year', db.Integer)
+    rlabel = db.Column('rlabel', db.Unicode)
+    genre = db.Column('genre', db.Unicode)
+    upc = db.Column('upc', db.Unicode)
+    format = db.Column('format', db.Unicode)
+
+# Route for index page
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# User registration
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm(request.form)
+    if request.method == 'POST' and form.validate():
+        username = form.username.data
+        password = sha256_crypt.encrypt(str(form.password.data))
+
+        # Create cursor
+        cur = mysql.connection.cursor()
+
+        # Execute Query
+        cur.execute("INSERT INTO users(username, password) VALUES(%s, %s)", (username, password))
+
+        # Commit to DB
+        mysql.connection.commit()
+
+        # Close DB connection
+        cur.close()
+
+        flash('You are now registered and can log in', 'success')
+
+        return redirect(url_for('index'))
+    return render_template('register.html', form=form)
+
+# Route for login page
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+# View all albums. Uses SQLAlchemy for pagination
+@app.route('/view_all/<int:page_num>')
+def albums(page_num):
+   albums = Albums.query.order_by(Albums.title.asc()).paginate(per_page=5, page=page_num, error_out=True)
+
+   return render_template('view_all.html', albums=albums)
+
+# View one album
+@app.route('/view_album/<string:catno>/')
+def view_album(catno):
+    cur = mysql.connection.cursor()
+    # Get the album from the 'albums' table
+    result = cur.execute("SELECT * FROM albums WHERE catno = %s", [catno])
+
+    album = cur.fetchone()
+    # Get list of songs on the album from 'songs' table
+    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s ORDER BY "
+    + "trackno ASC", [catno])
+
+    songs = cur.fetchall()
+
+    cur.close()
+
+    return render_template('view_album.html', album=album, songs=songs)
+
 # Route for page that has a form to insert a new record into the database
 @app.route('/add_album', methods=['GET', 'POST'])
 def add_album():
     form = AlbumForm()
     if request.method == 'POST' and form.validate():
-        # album art
         catno = form.catno.data.upper()
         artist = form.artist.data
         title = form.title.data
@@ -118,7 +151,9 @@ def add_album():
         cur = mysql.connection.cursor()
 
         # Execute cursor
-        cur.execute("INSERT INTO albums(catno, artist, title, year, rlabel, genre, format) VALUES(%s, %s, %s, %s, %s, %s, %s)",(catno, artist, title, year, rlabel, genre, format))
+        cur.execute("INSERT INTO albums(catno, artist, title, year, rlabel, "
+        + "genre, format) VALUES(%s, %s, %s, %s, %s, %s, %s)",
+        (catno, artist, title, year, rlabel, genre, format))
 
         # Commit to DB
         mysql.connection.commit()
@@ -128,7 +163,7 @@ def add_album():
 
         #flash('Repair Record Created', 'success')
 
-        return redirect(url_for('view_all'))
+        return redirect(url_for('view_album', catno=catno))
 
     return render_template('add_album.html', form=form)
 
@@ -148,7 +183,8 @@ def upload_cover(catno):
         # Create Cursor
         cur = mysql.connection.cursor()
         # Execute cursor
-        cur.execute("UPDATE albums SET albumArt=%s WHERE catno=%s", (file.filename, catno))
+        cur.execute("UPDATE albums SET albumArt=%s WHERE catno=%s",
+        (file.filename, catno))
         # Commit to DB
         mysql.connection.commit()
         # Close DB connection
@@ -170,7 +206,8 @@ def edit_album(catno):
     album = cur.fetchone()
 
     # Get list of songs on the album from 'songs' table
-    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s ORDER BY trackno ASC", [catno])
+    result_two = cur.execute("SELECT * FROM songs WHERE catno = %s ORDER BY "
+    + "trackno ASC", [catno])
 
     songs = cur.fetchall()
 
@@ -198,7 +235,9 @@ def edit_album(catno):
         # Create Cursor
         cur = mysql.connection.cursor()
         # Execute cursor
-        cur.execute("UPDATE albums SET artist=%s, title=%s, year=%s, rlabel=%s, genre=%s, format=%s WHERE catno=%s", (artist, title, year, rlabel, genre, format, catno))
+        cur.execute("UPDATE albums SET artist=%s, title=%s, year=%s, rlabel=%s,"
+        + " genre=%s, format=%s WHERE catno=%s",
+        (artist, title, year, rlabel, genre, format, catno))
         # Commit to DB
         mysql.connection.commit()
         # Close DB connection
@@ -216,7 +255,8 @@ def add_tracks(catno):
     # Create cursor
     cur = mysql.connection.cursor()
     # Get tracks for display as you're adding them
-    result = cur.execute("SELECT * FROM songs WHERE catno=%s ORDER BY trackno ASC", [catno])
+    result = cur.execute("SELECT * FROM songs WHERE catno=%s ORDER BY trackno "
+    + "ASC", [catno])
 
     songs = cur.fetchall()
 
@@ -237,7 +277,8 @@ def add_tracks(catno):
 
         cur = mysql.connection.cursor()
 
-        cur.execute("INSERT INTO songs(catno, trackno, title, duration) VALUES(%s, %s, %s, %s)", (catno, trackno, title, duration))
+        cur.execute("INSERT INTO songs(catno, trackno, title, duration) "
+        + "VALUES(%s, %s, %s, %s)", (catno, trackno, title, duration))
 
         mysql.connection.commit()
 
@@ -288,7 +329,8 @@ def edit_track(id):
         # Create Cursor
         cur = mysql.connection.cursor()
         # Execute cursor
-        cur.execute("UPDATE songs SET trackno=%s, title=%s, duration=%s WHERE id=%s", (trackno, title, duration, id))
+        cur.execute("UPDATE songs SET trackno=%s, title=%s, duration=%s WHERE "
+        + "id=%s", (trackno, title, duration, id))
         # Commit to DB
         mysql.connection.commit()
         # Close DB connection
