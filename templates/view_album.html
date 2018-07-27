@@ -1,23 +1,29 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-  <div class="col-md-12 text-center border mt-3">
+  <div class="col-md-12 text-center border-white mt-3">
     <h1 class="text-white">{{album.artist}} :: {{album.title}}</h1>
-    <form class="mb-3" action="{{url_for('edit_album', catno=album.catno)}}" method="">
-      <input type="hidden" name="_method" value="EDIT">
-      <input type="submit" value="Edit Album" class="btn btn-primary">
-    </form>
+    {% if session.logged_in %}
+      <form class="mb-3" action="{{url_for('edit_album', catno=album.catno)}}" method="">
+        <input type="hidden" name="_method" value="EDIT">
+        <input type="submit" value="Edit Album" class="btn btn-primary border-black">
+        <a class="btn btn-primary border-black" href="/view_all/1">Back</a>
+      </form>
+    {% else %}
+      <a class="btn btn-primary mb-3" href="/view_all/1">Back</a>
+    {% endif %}
   </div>
+
   <div class="row mt-3">
     <div class="col-sm-4 col-md-4 text-center mt-4">
       {% if album.albumArt == None %}
-        <img src="/static/album_art/not_available.png" height="300" width="300">
+        <img class="border-black" src="/static/album_art/not_available.png" height="300" width="300">
       {% elif album.albumArt != None %}
-        <img src="/static/album_art/{{album.albumArt}}" height="300" width="300">
+        <img class="border-black" src="/static/album_art/{{album.albumArt}}" height="300" width="300">
       {% endif %}
     </div>
     <div class="col-sm-8 col-md-8">
-      <table class="table table-light table-striped">
+      <table class="table table-light table-striped border-black">
       <tr>
         <td>Artist: {{album.artist}}</td>
       </tr>
@@ -49,9 +55,9 @@
     </div>
   </div>
 
-  <div class="card text-center border border-dark mt-3 mb-3 table-responsive">
+  <div class="card text-center border-black mt-3 mb-3 table-responsive">
     <table>
-      <tbody class="table table-striped">
+      <tbody class="table table-striped border-black">
       <tr class="bg-primary">
         <th>Track No.</th>
         <th>Track Name</th>

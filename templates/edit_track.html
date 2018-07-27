@@ -1,15 +1,16 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-<div class="col-md-12 text-center border mt-3">
+<div class="col-md-12 text-center border-white mt-3">
   <h1 class="text-white">{{album.artist}} :: {{album.title}}</h1>
+  <a class="btn btn-primary mb-3" href="{{ url_for('edit_album', catno=song.catno) }}">Back To Album</a>
 </div>
-<div class="card text-center mt-3">
+<div class="card text-center border-black mt-3">
   <div class="card-header text-center bg-primary">
     <p><h2 class="bold">Edit Album Track: "{{song.title}}"</h2></p>
   </div>
-  <form method="POST" action="" class="card-footer text-center">
-      <div class="row justify-content-center">
+  <form method="POST" action="" class="card-footer text-center border">
+      <div class="form-row justify-content-center">
         {{ form.csrf_token}}
         <div class="col-sm-3">
           {{ form.trackno.label }}<br>
@@ -21,16 +22,16 @@
         </div>
         <div class="col-sm-3">
           {{ form.minutes.label }}<br>
-          {{ form.minutes }}<br>
+          {{ form.minutes(class_="input-center") }}<br>
         </div>
         <div class="col-sm-3">
           {{ form.seconds.label }}<br>
-          {{ form.seconds }}
+          {{ form.seconds(class_="input-center") }}
         </div>
       </div>
       <input class="btn btn-primary mt-3" type="submit" value="Update">
   </form>
-  <form action="{{url_for('delete_track', id=id, catno=catno)}}" method="post">
+  <form action="{{url_for('delete_track', id=id, catno=catno)}}" method="post" class="mt-3">
     <input type="hidden" name="_method" value="DELETE">
     <input type="submit" value="Delete" class="btn btn-danger mb-3">
   </form>

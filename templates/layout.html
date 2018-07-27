@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <link rel="shortcut icon" href="{{url_for('static', filename='icon/favicon.ico')}}" />
     <title>Music Database</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
@@ -9,6 +10,7 @@
   <body class="bg-dark">
     {% include 'includes/_navbar.html' %}
     <div class="container">
+      {% include 'includes/_messages.html' %}
       {% block body %}{% endblock %}
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>

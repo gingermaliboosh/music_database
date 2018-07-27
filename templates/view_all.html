@@ -5,9 +5,9 @@
 
   <!-- Header goes here -->
 
-  <div class="card text-center border border-dark mt-3 table-responsive">
+  <div class="card text-center border-black mt-3 table-responsive">
     <table>
-      <tbody class="table table-striped">
+      <tbody class="table table-striped border-black">
       <tr class="bg-primary">
         <th>Album Cover</th>
         <th>Catalog Number</th>
@@ -38,7 +38,7 @@
             <!-- <td>Placeholder</td> -->
             <!-- <td>Placeholder</td> -->
             <td>
-              <a class="btn btn-primary" href="{{ url_for('view_album', catno=album.catno) }}">View Album</a>
+              <a class="btn btn-primary border-black" href="{{ url_for('view_album', catno=album.catno) }}">View Album</a>
             </td>
           </tr>
         {% endfor %}

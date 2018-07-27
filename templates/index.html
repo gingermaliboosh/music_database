@@ -1,34 +1,30 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-<div class="jumbotron mt-3 text-center">
+  <div class="jumbotron mt-3 text-center">
      <div class="container">
        <h1 class="display-3">Music Database Home</h1>
-       <p>Welcome, (user). Please Select An Option From Below</p>
+       <p>Welcome. Please login.</p>
      </div>
    </div>
 
-   <div class="container">
-     <!-- Example row of columns -->
-     <div class="row">
-       <div class="col-md-4">
-         <h2>Add To Database</h2>
-         <p>Add an album entry to the database.</p><br>
-         <p><a class="btn btn-secondary" href="/add_album" role="button">View details &raquo;</a></p>
-       </div>
-       <div class="col-md-4">
-         <h2>View Collection</h2>
-         <p>Choose this option to view your entire collection.</p>
-         <p><a class="btn btn-secondary" href="/view_all" role="button">View details &raquo;</a></p>
-       </div>
-       <div class="col-md-4">
-         <h2>Heading</h2>
-         <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
-         <p><a class="btn btn-secondary" href="#" role="button">View details &raquo;</a></p>
-       </div>
-     </div>
 
-     <hr>
-
-   </div> <!-- /container -->
+  {% if session.logged_in == NULL %}
+  <div class="border-white text-center mt-3">
+    <h1 class="text-white mb-3 mt-2">Login</h1>
+  </div>
+  <form class="mt-3" action="" method="POST">
+    {% from "includes/_formhelpers.html" import render_field %}
+    <form action="" method="POST">
+      <div class="form-group">
+        <h3><label class="text-white">Username</label></h3>
+        <input type="text" name="username" class="form-control" value={{request.form.username}}>
+      </div>
+      <div class="form-group">
+        <h3><label class="text-white">Password</label></h3>
+        <input type="password" name="password" class="form-control" value={{request.form.password}}>
+      </div>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  {% endif %}
 {% endblock %}

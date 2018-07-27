@@ -1,7 +1,7 @@
 from flask import Flask, render_template, flash, redirect, url_for, session, request, logging
 from flask_mysqldb import MySQL
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 from wtforms import StringField, SelectField, PasswordField, validators
 from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
 from werkzeug.utils import secure_filename
@@ -25,6 +25,7 @@ app.config['SECRET_KEY'] = 'secret123'
 # Config photo uploads for album covers
 app.config['UPLOADED_PHOTOS_DEST'] = 'static/album_art'
 configure_uploads(app, photos)
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 # init MySQL
 mysql = MySQL(app)
 # Config SQLAlchemy. Used for pagination when viewing all albums
@@ -33,7 +34,7 @@ db = SQLAlchemy(app)
 
 # Form for registering
 class RegisterForm(FlaskForm):
-    username = StringField('Username', [validators.Length(min=4, max=25)])
+    username = StringField('Username', [validators.DataRequired(), validators.Length(min=4, max=25)])
     password = PasswordField('Password', [validators.DataRequired(),
         validators.EqualTo('confirm', message='Passwords do not match')
     ])
@@ -42,7 +43,7 @@ class RegisterForm(FlaskForm):
 # Form for adding record to database
 class AlbumForm(FlaskForm):
     # Album Art - figure out image uploads
-    cover = FileField('Upload Cover Art')
+    cover = FileField(validators=[FileAllowed(photos, u'Image only!'), FileRequired(u'File was empty!')])
     catno = StringField('Catalog Number')
     artist = StringField('Artist')
     title = StringField("Album Title")
@@ -72,15 +73,71 @@ class Albums(db.Model):
     upc = db.Column('upc', db.Unicode)
     format = db.Column('format', db.Unicode)
 
+# Check if user logged in
+def is_logged_in(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('Unauthorized access. Please login.', 'danger')
+            return redirect(url_for('home'))
+    return wrap
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 # Route for index page
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def home():
+    if request.method == 'POST':
+        # Get form fields
+        username = request.form['username']
+        password_candidate = request.form['password']
+
+        # Create cursor
+        cur = mysql.connection.cursor()
+
+        # Get user by username
+        result = cur.execute("SELECT * FROM users WHERE username = %s", [username])
+
+        if result > 0:
+            # Get stored password hash
+            data = cur.fetchone()
+            password = data['password']
+
+            # Compare passwords
+            if sha256_crypt.verify(password_candidate, password):
+                # Passed
+                session['logged_in'] = True
+                session['username'] = username
+
+                flash('You are now logged in', 'success')
+                return redirect('/view_all/1')
+            else:
+                error = 'Invalid Login'
+                return render_template('index.html', error=error)
+            # Close DB connection
+            cur.close()
+        else:
+            error = 'Username not found'
+            return render_template('index.html', error=error)
+
     return render_template('index.html')
+
+# Logout
+@app.route('/logout')
+@is_logged_in
+def logout():
+    session.clear()
+    flash('You are now logged out', 'success')
+    return redirect(url_for('home'))
 
 # User registration
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    form = RegisterForm(request.form)
+    form = RegisterForm()
     if request.method == 'POST' and form.validate():
         username = form.username.data
         password = sha256_crypt.encrypt(str(form.password.data))
@@ -97,20 +154,16 @@ def register():
         # Close DB connection
         cur.close()
 
-        flash('You are now registered and can log in', 'success')
+        flash('You are now registered and can log in!', 'success')
 
-        return redirect(url_for('index'))
+        return redirect(url_for('home'))
+
     return render_template('register.html', form=form)
-
-# Route for login page
-@app.route('/login')
-def login():
-    return render_template('login.html')
 
 # View all albums. Uses SQLAlchemy for pagination
 @app.route('/view_all/<int:page_num>')
 def albums(page_num):
-   albums = Albums.query.order_by(Albums.title.asc()).paginate(per_page=5, page=page_num, error_out=True)
+   albums = Albums.query.order_by(Albums.title.asc()).paginate(per_page=10, page=page_num, error_out=True)
 
    return render_template('view_all.html', albums=albums)
 
@@ -134,6 +187,7 @@ def view_album(catno):
 
 # Route for page that has a form to insert a new record into the database
 @app.route('/add_album', methods=['GET', 'POST'])
+@is_logged_in
 def add_album():
     form = AlbumForm()
     if request.method == 'POST' and form.validate():
@@ -145,7 +199,6 @@ def add_album():
         genre = form.genre.data
         upc = form.upc.data
         format = form.format.data
-        # format (lp or tape)
 
         # Create Cursor
         cur = mysql.connection.cursor()
@@ -161,7 +214,7 @@ def add_album():
         # Close DB connection
         cur.close()
 
-        #flash('Repair Record Created', 'success')
+        flash('Album added!', 'success')
 
         return redirect(url_for('view_album', catno=catno))
 
@@ -169,33 +222,64 @@ def add_album():
 
 # Upload album cover art from edit page
 @app.route('/upload_cover/<string:catno>', methods=['GET', 'POST'])
+@is_logged_in
 def upload_cover(catno):
-
     if request.method == 'POST' and 'photo' in request.files:
         # Get file from user
         file = request.files['photo']
-        # Get the extention type from file
-        ext = os.path.splitext(file.filename)[1]
-        # Rename the file with the catalog number and file extension
-        file.filename = catno.replace(" ", "") + ext
-        # Save cover art
-        photos.save(file)
-        # Create Cursor
-        cur = mysql.connection.cursor()
-        # Execute cursor
-        cur.execute("UPDATE albums SET albumArt=%s WHERE catno=%s",
-        (file.filename, catno))
-        # Commit to DB
-        mysql.connection.commit()
-        # Close DB connection
-        cur.close()
+        if allowed_file(file.filename):
+            # Get the extention type from file
+            ext = os.path.splitext(file.filename)[1]
+            # Rename the file with the catalog number and file extension
+            file.filename = catno.replace(" ", "") + ext
+            # Save cover art
+            photos.save(file)
+            # Create Cursor
+            cur = mysql.connection.cursor()
+            # Execute cursor
+            cur.execute("UPDATE albums SET albumArt=%s WHERE catno=%s",
+            (file.filename, catno))
+            # Commit to DB
+            mysql.connection.commit()
+            # Close DB connection
+            cur.close()
 
-        return redirect(url_for('view_album', catno=catno))
+            return redirect(url_for('view_album', catno=catno))
+        else:
+            flash('Incorrect file format! Please select an image file! (PNG, JPG, or JPEG)', 'danger')
+
+            return redirect(url_for('edit_album', catno=catno))
+    else:
+        flash('Cover art upload error! No file selected!', 'danger')
+
+        return redirect(url_for('edit_album', catno=catno))
+
 
     return render_template('view_album.html')
 
+@app.route('/delete_cover/<string:catno>', methods=['GET', 'POST'])
+def delete_cover(catno):
+    cur = mysql.connection.cursor()
+
+    result = cur.execute("SELECT * FROM albums WHERE catno = %s", [catno])
+
+    album = cur.fetchone()
+    cover_art = album['albumArt']
+    value = None
+
+    os.remove((os.path.join('static/album_art', cover_art)))
+    cur.execute("UPDATE albums SET albumArt=%s WHERE catno=%s", [None, catno])
+
+    mysql.connection.commit()
+    cur.close()
+
+    flash('Cover art removed!', 'success')
+
+    return redirect(url_for('edit_album', catno=catno))
+
 # Edit album details
 @app.route('/edit_album/<string:catno>/', methods=['GET', 'POST'])
+@is_logged_in
 def edit_album(catno):
     # Create Cursor
     cur = mysql.connection.cursor()
@@ -250,6 +334,7 @@ def edit_album(catno):
     return render_template('edit_album.html', album=album, songs=songs, form=form)
 
 @app.route('/add_tracks/<string:catno>', methods=['GET', 'POST'])
+@is_logged_in
 def add_tracks(catno):
 
     # Create cursor
@@ -284,11 +369,14 @@ def add_tracks(catno):
 
         cur.close()
 
+        flash('Track Added!', 'success')
+
         return redirect(url_for('add_tracks', catno=catno))
 
     return render_template('add_tracks.html', songs=songs, form=form)
 
 @app.route('/edit_track/<int:id>', methods=['GET', 'POST'])
+@is_logged_in
 def edit_track(id):
     cur = mysql.connection.cursor()
 
@@ -336,12 +424,14 @@ def edit_track(id):
         # Close DB connection
         cur.close()
 
+        flash('Track Details Updated!', 'success')
+
         return redirect(url_for('edit_track', id=id))
 
     return render_template('edit_track.html', id=id, album=album, song=song, form=form)
 
 @app.route('/delete_track/<int:id>', methods=['POST'])
-#@is_logged_in
+@is_logged_in
 def delete_track(id):
     #Create cursor
     cur = mysql.connection.cursor()
@@ -358,7 +448,7 @@ def delete_track(id):
     #Close DB connection
     cur.close()
 
-    #flash('Article Deleted', 'success')
+    flash('Track removed!', 'success')
 
     return redirect(url_for('edit_album', catno=catno))
 

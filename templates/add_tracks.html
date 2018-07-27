@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-<div class="card text-center mt-3">
+<div class="card text-center border-black mt-3">
   <div class="card-header text-center bg-primary">
     <p>Add Songs</p>
   </div>
@@ -10,7 +10,7 @@
         {{ form.csrf_token}}
         <div class="col-sm-3">
           {{ form.trackno.label }}<br>
-          {{ form.trackno }}<br>
+          {{ form.trackno(class_="input-center") }}<br>
         </div>
         <div class="col-sm-3">
           {{ form.song_title.label }}<br>
@@ -18,11 +18,11 @@
         </div>
         <div class="col-sm-3">
           {{ form.minutes.label }}<br>
-          {{ form.minutes }}<br>
+          {{ form.minutes(class_="input-center") }}<br>
         </div>
         <div class="col-sm-3">
           {{ form.seconds.label }}<br>
-          {{ form.seconds }}
+          {{ form.seconds(class_="input-center") }}
         </div>
       </div>
       <input class="btn btn-primary mt-3" type="submit" value="Submit">
@@ -30,7 +30,7 @@
 
 </div>
 
-<div class="card text-center border border-dark mt-3 table-responsive">
+<div class="card text-center border-black mt-3 table-responsive">
   <table>
     <tbody class="table table-striped">
     <tr class="bg-primary">
